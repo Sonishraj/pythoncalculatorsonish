@@ -1,8 +1,49 @@
 import json
+import boto3
 import mysql.connector
 from mysql.connector import errorcode
 from flask import Flask
 app = Flask(__name__)
+
+def create_queue():
+    sqs_client = boto3.client("sqs", region_name="us-west-1",endpoint_url="http://localhost:4566")
+    response = sqs_client.create_queue(
+        QueueName="calculation-queue",
+        Attributes={
+            "DelaySeconds": "0",
+            "VisibilityTimeout": "60",  # 60 seconds
+        }
+    )
+    print(response)
+def send_message(value):
+    sqs_client = boto3.client("sqs", region_name="us-west-1",endpoint_url="http://localhost:4566")
+
+    message = {"key": value}
+    response = sqs_client.send_message(
+        QueueUrl="http://localhost:4566/000000000000/calculation-queue",
+        MessageBody=json.dumps(message)
+    )
+    print(response)
+def receive_message():
+    sqs_client = boto3.client("sqs", region_name="us-west-1",endpoint_url="http://localhost:4566")
+    response = sqs_client.receive_message(
+        QueueUrl="http://localhost:4566/000000000000/calculation-queue",
+        MaxNumberOfMessages=1,
+        WaitTimeSeconds=10,
+    )
+
+    print(f"Number of messages received: {len(response.get('Messages', []))}")
+    value=""
+    for message in response.get("Messages", []):
+        message_body = message["Body"]
+        pathval=json.loads(message_body)
+        print(pathval["key"])
+        value=pathval["key"]
+    return value
+        #print(f"Message body: {json.loads(message_body)}")
+        #print(f"Receipt Handle: {message['ReceiptHandle']}")
+    
+#create_queue()    
 
 
 def getConnection():
@@ -22,7 +63,9 @@ def getConnection():
 def index(varargs=None):
     operation='addition'
     sum=0
-    varargs1=varargs.split("/")
+    send_message(varargs)
+    varargs_receive = receive_message()
+    varargs1=varargs_receive.split("/")
     print(varargs)
     con = getConnection()
     # Using cursor() method to create cursor object
@@ -83,7 +126,9 @@ def index(varargs=None):
 @app.route('/multiplication/<path:varargs>')
 def index1(varargs=None):
     mul=1
-    varargs1=varargs.split("/")
+    send_message(varargs)
+    varargs_receive = receive_message()
+    varargs1=varargs_receive.split("/")
     operation = 'multiplication'
     print(varargs1)
     con = getConnection()
@@ -145,7 +190,9 @@ def index1(varargs=None):
 @app.route('/subtraction/<path:varargs>')
 def index2(varargs=None):
     sub=0
-    varargs1=varargs.split("/")
+    send_message(varargs)
+    varargs_receive = receive_message()
+    varargs1=varargs_receive.split("/")
     print(varargs1)
     operation= 'subtraction'
     con = getConnection()
@@ -208,7 +255,9 @@ def index2(varargs=None):
                        })
 @app.route('/division/<path:varargs>')
 def index3(varargs=None):
-    varargs1=varargs.split("/")
+    send_message(varargs)
+    varargs_receive = receive_message()
+    varargs1=varargs_receive.split("/")
     div=int(float(varargs1[0]))
     new=varargs1[1::]
     print(varargs1[1::])
