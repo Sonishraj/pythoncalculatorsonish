@@ -317,4 +317,4 @@ def index3(varargs=None):
         con.commit()
     return json.dumps({'result': div,
                        })
-app.run()
+app.run(host="0.0.0.0")

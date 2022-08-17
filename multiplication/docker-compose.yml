@@ -1,0 +1,28 @@
+version: "3.7"
+
+services:
+  db:
+    image: mysql
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+
+  localstack:
+    image: localstack/localstack-full
+    container_name: localstack
+    ports:
+      - 4566:4566
+      - 8080:8080
+    environment:
+      - SERVICES=sqs
+      - PORT_WEB_UI=8080
+      - DEBUG=0
+      - DATA_DIR=./tmp/localstack/data
+      - LAMBDA_EXECUTOR=local
+      - KINESIS_ERROR_PROBABILITY=0
+      - DOCKER_HOST=unix:///var/run/docker.sock
+      - LOCALSTACK_HOSTNAME=localhost
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./localstack-entrypoint.sh:/docker-entrypoint-initaws.d/localstack-entrypoint.sh

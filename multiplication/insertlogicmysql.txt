@@ -1,0 +1,43 @@
+import mysql.connector
+from mysql.connector import errorcode
+
+def getConnection():
+    try:
+        con = mysql.connector.connect(user='root', password='root', host='127.0.0.1', database='pythoncalc')
+        return con
+    except mysql.connector.Error as err:
+        if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
+            print("Your user name or password is incorrect")
+        elif err.errno == errorcode.ER_BAD_DB_ERROR:
+            print("Database does not exist")
+        else:
+            con.rollback()
+            print(err)
+
+try:
+
+    # Connecting with MySQL
+    con = mysql.connector.connect(user='root', password='root', host='127.0.0.1', database='pythoncalc')
+
+    # Using cursor() method to create cursor object
+    cursor = con.cursor()
+
+    # Sql query to insert date into table
+    sql_query = "INSERT INTO input_output(inputargs, output, operationtype) VALUES ('{}','{}', '{}' )".format('1/2/3','6','addition')
+
+    # Executing the SQL command
+    cursor.execute(sql_query)
+
+    # Commit your changes in the database
+    con.commit()
+
+except mysql.connector.Error as err:
+    if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
+        print("Your user name or password is incorrect")
+    elif err.errno == errorcode.ER_BAD_DB_ERROR:
+        print("Database does not exist")
+    else:
+        con.rollback()
+        print(err)
+finally:
+        con.close()
