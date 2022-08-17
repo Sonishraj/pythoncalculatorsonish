@@ -15,6 +15,9 @@ services:
       - 4566:4566
       - 8080:8080
     environment:
+      - AWS_ACCESS_KEY_ID: foo
+      - AWS_SECRET_ACCESS_KEY: bar
+      - AWS_DEFAULT_REGION: us-east-1
       - SERVICES=sqs
       - PORT_WEB_UI=8080
       - DEBUG=0
