@@ -3,10 +3,11 @@ import boto3
 import mysql.connector
 from mysql.connector import errorcode
 from flask import Flask
+from typing import List, Dict
 app = Flask(__name__)
 
 def create_queue():
-    sqs_client = boto3.client("sqs", region_name="us-west-1",endpoint_url="http://localhost:4566")
+    sqs_client = boto3.client("sqs", region_name="us-east-1",endpoint_url="http://localstack:4566")
     response = sqs_client.create_queue(
         QueueName="calculation-queue",
         Attributes={
@@ -16,7 +17,7 @@ def create_queue():
     )
     print(response)
 def send_message(value):
-    sqs_client = boto3.client("sqs", region_name="us-west-1",endpoint_url="http://localhost:4566")
+    sqs_client = boto3.client("sqs", region_name="us-east-1",endpoint_url="http://localstack:4566")
 
     message = {"key": value}
     response = sqs_client.send_message(
@@ -25,7 +26,7 @@ def send_message(value):
     )
     print(response)
 def receive_message():
-    sqs_client = boto3.client("sqs", region_name="us-west-1",endpoint_url="http://localhost:4566")
+    sqs_client = boto3.client("sqs", region_name="us-east-1",endpoint_url="http://localstack:4566")
     response = sqs_client.receive_message(
         QueueUrl="http://localhost:4566/000000000000/calculation-queue",
         MaxNumberOfMessages=1,
@@ -45,11 +46,18 @@ def receive_message():
     
 #create_queue()    
 
-
-def getConnection():
+def getConnection() -> List[Dict]:
     try:
-        con = mysql.connector.connect(user='root', password='root', host='127.0.0.1', database='pythoncalc')
-        return con
+        
+        config = {
+            'user': 'root',
+            'password': 'root',
+            'host': 'db',
+            'port': '3308',
+            'database': 'pythoncalc'
+        }
+        connection = mysql.connector.connect(**config)
+        return connection
     except mysql.connector.Error as err:
         if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
             print("Your user name or password is incorrect")

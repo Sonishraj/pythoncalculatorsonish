@@ -1,50 +1,17 @@
 version: "2"
-services:  
-  addition:
-    build: ./addition
+services:
+  app:
+    build: ./app
     links:
-      - db
+      - mysqlp_db_1
       - localstack
     ports:
-      - "5111:5000"
+      - "5000:5000"
     environment:
       - AWS_ACCESS_KEY_ID=foo
       - AWS_SECRET_ACCESS_KEY=bar
       - AWS_DEFAULT_REGION=us-east-1
-  subtraction:
-    build: ./subtraction
-    links:
-      - db
-      - localstack
-    ports:
-      - "5112:5000"
-    environment:
-      - AWS_ACCESS_KEY_ID=foo
-      - AWS_SECRET_ACCESS_KEY=bar
-      - AWS_DEFAULT_REGION=us-east-1
-  division:
-    build: ./division
-    links:
-      - db
-      - localstack
-    ports:
-      - "5113:5000"
-    environment:
-      - AWS_ACCESS_KEY_ID=foo
-      - AWS_SECRET_ACCESS_KEY=bar
-      - AWS_DEFAULT_REGION=us-east-1
-  multiplication:
-    build: ./multiplication
-    links:
-      - db
-      - localstack
-    ports:
-      - "5114:5000"
-    environment:
-      - AWS_ACCESS_KEY_ID=foo
-      - AWS_SECRET_ACCESS_KEY=bar
-      - AWS_DEFAULT_REGION=us-east-1
-  db:
+  mysqlp_db_1:
     image: mysql:5.7
     ports:
       - "3308:3306"

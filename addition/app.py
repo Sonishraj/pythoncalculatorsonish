@@ -3,10 +3,14 @@ import boto3
 import mysql.connector
 from mysql.connector import errorcode
 from flask import Flask
+from typing import List, Dict
+
 app = Flask(__name__)
 
+endpoint_url = "http://localstack:4566"
+
 def create_queue():
-    sqs_client = boto3.client("sqs", region_name="us-west-1",endpoint_url="http://localhost:4566")
+    sqs_client = boto3.client("sqs", region_name="us-east-1",endpoint_url="http://localstack:4566")
     response = sqs_client.create_queue(
         QueueName="calculation-queue",
         Attributes={
@@ -16,18 +20,18 @@ def create_queue():
     )
     print(response)
 def send_message(value):
-    sqs_client = boto3.client("sqs", region_name="us-west-1",endpoint_url="http://localhost:4566")
+    sqs_client = boto3.client("sqs", region_name="us-east-1",endpoint_url="http://localstack:4566")
 
     message = {"key": value}
     response = sqs_client.send_message(
-        QueueUrl="http://localhost:4566/000000000000/calculation-queue",
+        QueueUrl="http://localstack:4566/000000000000/calculation-queue",
         MessageBody=json.dumps(message)
     )
     print(response)
 def receive_message():
-    sqs_client = boto3.client("sqs", region_name="us-west-1",endpoint_url="http://localhost:4566")
+    sqs_client = boto3.client("sqs", region_name="us-east-1",endpoint_url="http://localstack:4566")
     response = sqs_client.receive_message(
-        QueueUrl="http://localhost:4566/000000000000/calculation-queue",
+        QueueUrl="http://localstack:4566/000000000000/calculation-queue",
         MaxNumberOfMessages=1,
         WaitTimeSeconds=10,
     )
@@ -46,31 +50,46 @@ def receive_message():
 #create_queue()    
 
 
-def getConnection():
+def getConnection()  -> List[Dict]:
     try:
-        con = mysql.connector.connect(user='root', password='root', host='127.0.0.1', database='pythoncalc')
-        return con
+        config = {
+            'user': 'root',
+            'password': 'root',
+            'host': 'db',
+            'port': '3308',
+            'database': 'pythoncalc'
+        }
+        connection = mysql.connector.connect(**config)
+        cursor = connection.cursor()
+    
+        #con = mysql.connector.connect(user='mysql', password='password', host='addition_db_1', database='pythoncalc')
+        
+        return connection
     except mysql.connector.Error as err:
         if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
             print("Your user name or password is incorrect")
         elif err.errno == errorcode.ER_BAD_DB_ERROR:
             print("Database does not exist")
         else:
-            con.rollback()
+            connection.rollback()
             print(err)
 
-@app.route('/subtraction/<path:varargs>')
-def index2(varargs=None):
-    sub=0
+@app.route('/addition/<path:varargs>')
+def index(varargs=None):
+    operation='addition'
+    sum=0
     send_message(varargs)
     varargs_receive = receive_message()
     varargs1=varargs_receive.split("/")
-    print(varargs1)
-    operation= 'subtraction'
+    print(varargs)
+    '''for i in varargs1:
+        if(i!=''):
+            sum+=int(float(i))
+            print('calculating')'''
     con = getConnection()
     # Using cursor() method to create cursor object
     cursor = con.cursor()
-    select_movies_query = "SELECT * FROM pythoncalc.input_output WHERE operationtype ='{}' ".format(operation)
+    select_movies_query = "SELECT * FROM pythoncalc.input_output  WHERE operationtype ='{}' ".format(operation)
     cursor.execute(select_movies_query)
     result = cursor.fetchall()
     print(type(result))
@@ -106,24 +125,37 @@ def index2(varargs=None):
             print(input)
             print(output)
             print(operation)
-            sub = output
+            sum = output
         print('returning from DB')
     else:
         for i in varargs1:
             if(i!=''):
-                if(sub==0 and int(i)>0):
-                    sub=int(float(i))
-                else:
-                    sub-=int(float(i))
-         # Sql query to insert date into table
-        sql_query = "INSERT INTO input_output(inputargs, output, operationtype) VALUES ('{}','{}', '{}' )".format(varargs,sub,operation)
+                sum+=int(float(i))
+                print('calculating')
+        # Sql query to insert date into table
+        sql_query = "INSERT INTO input_output(inputargs, output, operationtype) VALUES ('{}','{}', '{}' )".format(varargs,sum,operation)
 
         # Executing the SQL command
         cursor.execute(sql_query)
 
         # Commit your changes in the database
         con.commit()
-    return json.dumps({'result': sub,
+    return json.dumps({'result': sum,
                        })
+
+@app.route('/createqueue')
+def index2() -> str:
+    sqs = boto3.client("sqs", endpoint_url=endpoint_url)
+    response = sqs.create_queue(
+    QueueName='calculation-queue',
+    Attributes={
+        'DelaySeconds': '60',
+        'MessageRetentionPeriod': '86400'
+    }
+    )
+
+    print(response['QueueUrl'])
+
+    return json.dumps({'QueueUrl': response['QueueUrl']})
 
 app.run(host="0.0.0.0")

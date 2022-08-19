@@ -3,10 +3,11 @@ import boto3
 import mysql.connector
 from mysql.connector import errorcode
 from flask import Flask
+from typing import List, Dict
 app = Flask(__name__)
 
 def create_queue():
-    sqs_client = boto3.client("sqs", region_name="us-west-1",endpoint_url="http://localhost:4566")
+    sqs_client = boto3.client("sqs", region_name="us-east-1",endpoint_url="http://localstack:4566")
     response = sqs_client.create_queue(
         QueueName="calculation-queue",
         Attributes={
@@ -16,7 +17,7 @@ def create_queue():
     )
     print(response)
 def send_message(value):
-    sqs_client = boto3.client("sqs", region_name="us-west-1",endpoint_url="http://localhost:4566")
+    sqs_client = boto3.client("sqs", region_name="us-east-1",endpoint_url="http://localstack:4566")
 
     message = {"key": value}
     response = sqs_client.send_message(
@@ -25,7 +26,7 @@ def send_message(value):
     )
     print(response)
 def receive_message():
-    sqs_client = boto3.client("sqs", region_name="us-west-1",endpoint_url="http://localhost:4566")
+    sqs_client = boto3.client("sqs", region_name="us-east-1",endpoint_url="http://localstack:4566")
     response = sqs_client.receive_message(
         QueueUrl="http://localhost:4566/000000000000/calculation-queue",
         MaxNumberOfMessages=1,
@@ -46,10 +47,18 @@ def receive_message():
 #create_queue()    
 
 
-def getConnection():
+def getConnection()-> List[Dict]:
     try:
-        con = mysql.connector.connect(user='root', password='root', host='127.0.0.1', database='pythoncalc')
-        return con
+       
+        config = {
+            'user': 'root',
+            'password': 'root',
+            'host': 'db',
+            'port': '3308',
+            'database': 'pythoncalc'
+        }
+        connection = mysql.connector.connect(**config)
+        return connection
     except mysql.connector.Error as err:
         if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
             print("Your user name or password is incorrect")
@@ -59,19 +68,18 @@ def getConnection():
             con.rollback()
             print(err)
 
-
-@app.route('/multiplication/<path:varargs>')
-def index1(varargs=None):
-    mul=1
+@app.route('/subtraction/<path:varargs>')
+def index2(varargs=None):
+    sub=0
     send_message(varargs)
     varargs_receive = receive_message()
     varargs1=varargs_receive.split("/")
-    operation = 'multiplication'
     print(varargs1)
+    operation= 'subtraction'
     con = getConnection()
     # Using cursor() method to create cursor object
     cursor = con.cursor()
-    select_movies_query = "SELECT * FROM pythoncalc.input_output  WHERE operationtype ='{}' ".format(operation)
+    select_movies_query = "SELECT * FROM pythoncalc.input_output WHERE operationtype ='{}' ".format(operation)
     cursor.execute(select_movies_query)
     result = cursor.fetchall()
     print(type(result))
@@ -107,21 +115,24 @@ def index1(varargs=None):
             print(input)
             print(output)
             print(operation)
-            mul = output
+            sub = output
         print('returning from DB')
     else:
         for i in varargs1:
             if(i!=''):
-                mul*=int(float(i))
-        # Sql query to insert date into table
-        sql_query = "INSERT INTO input_output(inputargs, output, operationtype) VALUES ('{}','{}', '{}' )".format(varargs,mul,operation)
+                if(sub==0 and int(i)>0):
+                    sub=int(float(i))
+                else:
+                    sub-=int(float(i))
+         # Sql query to insert date into table
+        sql_query = "INSERT INTO input_output(inputargs, output, operationtype) VALUES ('{}','{}', '{}' )".format(varargs,sub,operation)
 
         # Executing the SQL command
         cursor.execute(sql_query)
 
         # Commit your changes in the database
         con.commit()
-    return json.dumps({'result': mul,
+    return json.dumps({'result': sub,
                        })
 
 app.run(host="0.0.0.0")

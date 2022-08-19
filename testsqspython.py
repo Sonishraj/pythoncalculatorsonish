@@ -2,7 +2,7 @@ import boto3
 import json
 
 def create_queue():
-    sqs_client = boto3.client("sqs", region_name="us-west-1",endpoint_url="http://localhost:4566")
+    sqs_client = boto3.client("sqs", region_name="us-east-1",endpoint_url="http://localhost:4566")
     response = sqs_client.create_queue(
         QueueName="calculation-queue",
         Attributes={
@@ -12,7 +12,7 @@ def create_queue():
     )
     print(response)
 def send_message():
-    sqs_client = boto3.client("sqs", region_name="us-west-1",endpoint_url="http://localhost:4566")
+    sqs_client = boto3.client("sqs", region_name="us-east-1",endpoint_url="http://localhost:4566")
 
     message = {"key": "value"}
     response = sqs_client.send_message(
@@ -21,7 +21,7 @@ def send_message():
     )
     print(response)
 def receive_message():
-    sqs_client = boto3.client("sqs", region_name="us-west-1",endpoint_url="http://localhost:4566")
+    sqs_client = boto3.client("sqs", region_name="us-east-1",endpoint_url="http://localhost:4566")
     response = sqs_client.receive_message(
         QueueUrl="http://localhost:4566/000000000000/calculation-queue",
         MaxNumberOfMessages=1,

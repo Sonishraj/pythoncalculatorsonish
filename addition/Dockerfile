@@ -21,4 +21,4 @@ RUN pip3 install mysql-connector-python
 COPY . .
 EXPOSE 5000/tcp
 
-CMD [ "python3", "calculation.py"]
+CMD [ "python3", "app.py"]
