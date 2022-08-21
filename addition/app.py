@@ -8,7 +8,8 @@ from typing import List, Dict
 app = Flask(__name__)
 
 endpoint_url = "http://localstack:4566"
-
+operation="addition"
+QueueUrl="http://localstack:4566/000000000000/calculation-queue"
 def create_queue():
     sqs_client = boto3.client("sqs", region_name="us-east-1",endpoint_url="http://localstack:4566")
     response = sqs_client.create_queue(
@@ -40,6 +41,8 @@ def receive_message():
     value=""
     for message in response.get("Messages", []):
         message_body = message["Body"]
+        delete_message= sqs_client.delete_message(QueueUrl=QueueUrl, ReceiptHandle=message["ReceiptHandle"]) 
+        print('delete_message', delete_message)
         pathval=json.loads(message_body)
         print(pathval["key"])
         value=pathval["key"]
@@ -50,19 +53,9 @@ def receive_message():
 #create_queue()    
 
 
-def getConnection()  -> List[Dict]:
+def getConnection():
     try:
-        config = {
-            'user': 'root',
-            'password': 'root',
-            'host': 'db',
-            'port': '3308',
-            'database': 'pythoncalc'
-        }
-        connection = mysql.connector.connect(**config)
-        cursor = connection.cursor()
-    
-        #con = mysql.connector.connect(user='mysql', password='password', host='addition_db_1', database='pythoncalc')
+        connection = mysql.connector.connect(host='mysql-db',                                        database='urlshortener',user='root',            password='root')
         
         return connection
     except mysql.connector.Error as err:
@@ -71,7 +64,7 @@ def getConnection()  -> List[Dict]:
         elif err.errno == errorcode.ER_BAD_DB_ERROR:
             print("Database does not exist")
         else:
-            connection.rollback()
+            #connection.rollback()
             print(err)
 
 @app.route('/addition/<path:varargs>')
@@ -82,6 +75,7 @@ def index(varargs=None):
     varargs_receive = receive_message()
     varargs1=varargs_receive.split("/")
     print(varargs)
+    getConnection()
     '''for i in varargs1:
         if(i!=''):
             sum+=int(float(i))
@@ -89,7 +83,9 @@ def index(varargs=None):
     con = getConnection()
     # Using cursor() method to create cursor object
     cursor = con.cursor()
-    select_movies_query = "SELECT * FROM pythoncalc.input_output  WHERE operationtype ='{}' ".format(operation)
+    create_table="CREATE TABLE  IF NOT EXISTS input_output(id int NOT NULL AUTO_INCREMENT,inputargs varchar(45) DEFAULT NULL,output varchar(45) DEFAULT NULL,operationtype varchar(45) DEFAULT NULL,PRIMARY KEY (id))"
+    select_movies_query = "SELECT * FROM input_output  WHERE operationtype ='{}' ".format(operation)
+    cursor.execute(create_table)
     cursor.execute(select_movies_query)
     result = cursor.fetchall()
     print(type(result))
@@ -112,7 +108,7 @@ def index(varargs=None):
     else:
         print('element doesnt exist')
     if(varargs in inputargslist):
-        select_movies_query = "SELECT * FROM pythoncalc.input_output WHERE inputargs='{}' and operationtype='{}' LIMIT 1".format(varargs,operation)
+        select_movies_query = "SELECT * FROM input_output WHERE inputargs='{}' and operationtype='{}' LIMIT 1".format(varargs,operation)
         cursor.execute(select_movies_query)
         result = cursor.fetchall()
         print(result)

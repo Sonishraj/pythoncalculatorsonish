@@ -1,9 +1,11 @@
 version: "2"
+
+    
 services:  
   addition:
-    build: ./addition
+    build: ./addition/
     links:
-      - db
+
       - localstack
     ports:
       - "5111:5000"
@@ -11,10 +13,12 @@ services:
       - AWS_ACCESS_KEY_ID=foo
       - AWS_SECRET_ACCESS_KEY=bar
       - AWS_DEFAULT_REGION=us-east-1
+    depends_on:
+      -  mysql-db  
   subtraction:
-    build: ./subtraction
+    build: ./subtraction/
     links:
-      - db
+
       - localstack
     ports:
       - "5112:5000"
@@ -22,21 +26,26 @@ services:
       - AWS_ACCESS_KEY_ID=foo
       - AWS_SECRET_ACCESS_KEY=bar
       - AWS_DEFAULT_REGION=us-east-1
+    depends_on:
+      -  mysql-db
   division:
-    build: ./division
+    build: ./division/
     links:
-      - db
+
       - localstack
     ports:
       - "5113:5000"
+    
     environment:
       - AWS_ACCESS_KEY_ID=foo
       - AWS_SECRET_ACCESS_KEY=bar
       - AWS_DEFAULT_REGION=us-east-1
+    depends_on:
+      -  mysql-db
   multiplication:
-    build: ./multiplication
+    build: ./multiplication/
     links:
-      - db
+    
       - localstack
     ports:
       - "5114:5000"
@@ -44,15 +53,19 @@ services:
       - AWS_ACCESS_KEY_ID=foo
       - AWS_SECRET_ACCESS_KEY=bar
       - AWS_DEFAULT_REGION=us-east-1
-  db:
+    depends_on:
+      -  mysql-db
+    
+  mysql-db:
+    container_name: mysql-db
     image: mysql:5.7
-    ports:
-      - "3308:3306"
+    restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: root
-    volumes:
-      - ./db:/docker-entrypoint-initdb.d/:ro
-      
+        MYSQL_ROOT_PASSWORD: root
+        MYSQL_DATABASE: urlshortener
+    ports:
+        - '3308:3306'
+     
   localstack:
     image: localstack/localstack-full
     container_name: localstack
@@ -68,6 +81,7 @@ services:
       - KINESIS_ERROR_PROBABILITY=0
       - DOCKER_HOST=unix:///var/run/docker.sock
       - LOCALSTACK_HOSTNAME=localhost
+     
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - ./localstack-entrypoint.sh:/docker-entrypoint-initaws.d/localstack-entrypoint.sh    
+      - ./localstack-entrypoint.sh:/docker-entrypoint-initaws.d/localstack-entrypoint.sh

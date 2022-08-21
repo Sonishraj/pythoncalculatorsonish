@@ -6,6 +6,9 @@ from flask import Flask
 from typing import List, Dict
 app = Flask(__name__)
 
+endpoint_url = "http://localstack:4566"
+operation="addition"
+QueueUrl="http://localstack:4566/000000000000/calculation-queue"
 def create_queue():
     sqs_client = boto3.client("sqs", region_name="us-east-1",endpoint_url="http://localstack:4566")
     response = sqs_client.create_queue(
@@ -21,14 +24,14 @@ def send_message(value):
 
     message = {"key": value}
     response = sqs_client.send_message(
-        QueueUrl="http://localhost:4566/000000000000/calculation-queue",
+        QueueUrl="http://localstack:4566/000000000000/calculation-queue",
         MessageBody=json.dumps(message)
     )
     print(response)
 def receive_message():
     sqs_client = boto3.client("sqs", region_name="us-east-1",endpoint_url="http://localstack:4566")
     response = sqs_client.receive_message(
-        QueueUrl="http://localhost:4566/000000000000/calculation-queue",
+        QueueUrl="http://localstack:4566/000000000000/calculation-queue",
         MaxNumberOfMessages=1,
         WaitTimeSeconds=10,
     )
@@ -37,6 +40,8 @@ def receive_message():
     value=""
     for message in response.get("Messages", []):
         message_body = message["Body"]
+        delete_message= sqs_client.delete_message(QueueUrl=QueueUrl, ReceiptHandle=message["ReceiptHandle"]) 
+        print('delete_message', delete_message)
         pathval=json.loads(message_body)
         print(pathval["key"])
         value=pathval["key"]
@@ -46,17 +51,11 @@ def receive_message():
     
 #create_queue()    
 
-def getConnection() -> List[Dict]:
+
+def getConnection():
     try:
+        connection = mysql.connector.connect(host='mysql-db',                                        database='urlshortener',user='root',            password='root')
         
-        config = {
-            'user': 'root',
-            'password': 'root',
-            'host': 'db',
-            'port': '3308',
-            'database': 'pythoncalc'
-        }
-        connection = mysql.connector.connect(**config)
         return connection
     except mysql.connector.Error as err:
         if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
@@ -64,7 +63,7 @@ def getConnection() -> List[Dict]:
         elif err.errno == errorcode.ER_BAD_DB_ERROR:
             print("Database does not exist")
         else:
-            con.rollback()
+            #connection.rollback()
             print(err)
 
 
@@ -80,7 +79,7 @@ def index3(varargs=None):
     con = getConnection()
     # Using cursor() method to create cursor object
     cursor = con.cursor()
-    select_movies_query = "SELECT * FROM pythoncalc.input_output  WHERE operationtype ='{}' ".format(operation)
+    select_movies_query = "SELECT * FROM input_output  WHERE operationtype ='{}' ".format(operation)
     cursor.execute(select_movies_query)
     result = cursor.fetchall()
     print(type(result))
@@ -103,7 +102,7 @@ def index3(varargs=None):
     else:
         print('element doesnt exist')
     if(varargs in inputargslist):
-        select_movies_query = "SELECT * FROM pythoncalc.input_output WHERE inputargs='{}' and operationtype='{}' LIMIT 1".format(varargs,operation)
+        select_movies_query = "SELECT * FROM input_output WHERE inputargs='{}' and operationtype='{}' LIMIT 1".format(varargs,operation)
         cursor.execute(select_movies_query)
         result = cursor.fetchall()
         print(result)

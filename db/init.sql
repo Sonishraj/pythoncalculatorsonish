@@ -1,18 +1,13 @@
-create database pythoncalc;
-use pythoncalc;
+use urlshortener;
 
 CREATE TABLE test_table (
   name VARCHAR(20),
   color VARCHAR(10)
 );
 
-CREATE TABLE `input_output` (
-  `id` int NOT NULL AUTO_INCREMENT,
-  `inputargs` varchar(45) DEFAULT NULL,
-  `output` varchar(45) DEFAULT NULL,
-  `operationtype` varchar(45) DEFAULT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=61 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+CREATE TABLE input_output(id int NOT NULL AUTO_INCREMENT,inputargs varchar(45) DEFAULT NULL,output varchar(45) DEFAULT NULL,operationtype varchar(45) DEFAULT NULL,PRIMARY KEY (id))
+INSERT INTO input_output(inputargs, output,operationtype)VALUES  ('/0/0', '0','addition');
+  
 
 INSERT INTO test_table
   (name, color)
